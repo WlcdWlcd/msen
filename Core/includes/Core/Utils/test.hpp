@@ -1,3 +1,0 @@
-namespace msen {
-	void sayHello();
-}
