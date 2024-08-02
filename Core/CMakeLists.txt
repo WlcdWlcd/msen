@@ -15,6 +15,9 @@ set(CORE_PRIVATE_INCLUIDES
 	src/Core/Rendering/OpenGL/ShaderProgram.hpp
 	src/Core/Rendering/OpenGL/VertexBuffer.hpp
 	src/Core/Rendering/OpenGL/IndexBuffer.hpp
+	src/Core/Rendering/OpenGL/BufferLayout.hpp
+	src/Core/Rendering/OpenGL/BufferElement.hpp
+	src/Core/Rendering/OpenGL/ShaderDataType.hpp
 	src/Core/Rendering/OpenGL/VertexArray.hpp
 	
 	
@@ -26,6 +29,9 @@ set(CORE_PRIVATE_SOURCES
 	src/Core/Rendering/OpenGL/ShaderProgram.cpp
 	src/Core/Rendering/OpenGL/VertexBuffer.cpp
 	src/Core/Rendering/OpenGL/IndexBuffer.cpp
+	src/Core/Rendering/OpenGL/BufferLayout.cpp
+	src/Core/Rendering/OpenGL/BufferElement.cpp
+	src/Core/Rendering/OpenGL/ShaderDataType.cpp
 	src/Core/Rendering/OpenGL/VertexArray.cpp
 	
 )

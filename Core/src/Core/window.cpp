@@ -4,6 +4,9 @@
 #include <Core/Rendering/OpenGL/VertexBuffer.hpp>
 #include <Core/Rendering/OpenGL/VertexArray.hpp>
 #include <Core/Rendering/OpenGL/IndexBuffer.hpp>
+#include <Core/Rendering/OpenGL/BufferLayout.hpp>
+#include <Core/Rendering/OpenGL/BufferElement.hpp>
+
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>

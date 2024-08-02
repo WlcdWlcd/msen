@@ -1,5 +1,6 @@
 #include "VertexArray.hpp"
 #include "core/Log.hpp"
+#include "BufferElement.hpp"
 
 #include <glad/glad.h>
 
