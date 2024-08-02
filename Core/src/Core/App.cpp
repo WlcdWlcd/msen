@@ -24,7 +24,7 @@ namespace msen {
 
 		m_event_dispatcher.add_event_listener<EventMouseMoved>(
 			[](EventMouseMoved& event) {
-				LOG_INFO("[EVENT: MOUSE MOVED] mouse moved to {0}x{1}", event.x, event.y);
+				//LOG_INFO("[EVENT: MOUSE MOVED] mouse moved to {0}x{1}", event.x, event.y);
 			}
 		);
 

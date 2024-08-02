@@ -1,6 +1,7 @@
 #include "Core/window.hpp"
 #include "Core/Log.hpp"
-
+#include "Core/Rendering/OpenGL/ShaderProgram.hpp"
+#include <Core/Rendering/OpenGL/VertexBuffer.hpp>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -11,15 +12,7 @@
 
 namespace msen {
     
-    static void check_shader(GLuint shader) {
-        int success;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            char infoLog[512];
-            glGetShaderInfoLog(shader, 512, nullptr,infoLog);
-            LOG_CRITICAL(infoLog);
-        }
-    }
+
     
     static bool s_GLFW_initialized = false;
 
@@ -42,7 +35,7 @@ namespace msen {
         "out vec3 color;"
         "void main() {"
         "   color = vertex_color;"
-        "   gl_Position = vec4(vertex_position,2.0);"
+        "   gl_Position = vec4(vertex_position,1.0);"
         "}";
 
     
@@ -55,7 +48,11 @@ namespace msen {
         "   frag_color = vec4(color,1.0);"
         "}";
 
-    GLuint shader_program;
+
+
+    std::unique_ptr<ShaderProgram> p_shader_program;
+    std::unique_ptr<VertexBuffer> p_points_vbo;
+    std::unique_ptr<VertexBuffer> p_colors_vbo;
     GLuint vao;
 
 
@@ -147,29 +144,14 @@ namespace msen {
             glViewport(0, 0, width, height);
             }
         );
+        
+        p_shader_program = std::make_unique<ShaderProgram>(vertex_shader, fragment_shader);
+        if (!p_shader_program->isCompiled()) {
+            return false;
+        }
 
-        GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vs, 1, &vertex_shader, nullptr);
-        glCompileShader(vs);
-        check_shader(vs);
-
-        GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fs, 1, &fragment_shader, nullptr);
-        glCompileShader(fs);
-        check_shader(fs);
-        shader_program = glCreateProgram();
-        glAttachShader(shader_program, vs);
-        glAttachShader(shader_program, fs);
-        glLinkProgram(shader_program);
-
-        glDeleteShader(vs);
-        glDeleteShader(fs);
-
-        GLuint points_vbo = 0;
-        glGenBuffers(1, &points_vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, points_vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
-
+        p_points_vbo = std::make_unique<VertexBuffer>(points, sizeof(points));
+        p_colors_vbo = std::make_unique<VertexBuffer>(colors, sizeof(colors));
 
         GLuint colors_vbo = 0;
         glGenBuffers(1, &colors_vbo);
@@ -180,11 +162,11 @@ namespace msen {
         glBindVertexArray(vao);
 
         glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, points_vbo);
+        p_points_vbo->bind();
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
         glEnableVertexAttribArray(1);
-        glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
+        p_colors_vbo->bind();
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
         return 0;
@@ -200,7 +182,8 @@ namespace msen {
         glClearColor( r,g,b,a);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(shader_program);
+        p_shader_program->bind();
+
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES,0,3);
 
