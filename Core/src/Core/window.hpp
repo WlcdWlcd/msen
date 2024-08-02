@@ -36,6 +36,7 @@ namespace msen {
 		};
 
 		float m_background_color[4] = { 0.5f,0.5f,0.5f,0.5f };
+		
 
 		WindowData m_data;
 		GLFWwindow* m_pWindow = nullptr;

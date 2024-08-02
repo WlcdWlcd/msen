@@ -2,6 +2,8 @@
 #include "Core/Log.hpp"
 #include "Core/Rendering/OpenGL/ShaderProgram.hpp"
 #include <Core/Rendering/OpenGL/VertexBuffer.hpp>
+#include <Core/Rendering/OpenGL/VertexArray.hpp>
+#include <Core/Rendering/OpenGL/IndexBuffer.hpp>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -16,17 +18,21 @@ namespace msen {
     
     static bool s_GLFW_initialized = false;
 
-    GLfloat points[] = {
-        0.0,0.5,0.0,
-        0.5,-0.5,0.0,
-        -0.5,-0.5,0.0,
+    GLfloat position_colors [] = {
+         0.5f,  0.5f, 0.0f,    1.0f, 1.0f, 0.0f,
+         0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f, 0.0f,    1.0f ,0.0f, 1.0f,
+        -0.5f, -0.5f, 0.0f,    1.0f, 0.0f, 0.0f,
+         0.0f, 1.0f,0.0,       0.0f,0.0f,0.0f, 
+         0.0f, -1.0f,-5.0,       1.0f,1.0f,1.0f, 
+
     };
 
-    GLfloat colors[] = {
-        1.0,0.0,0.0,
-        0.0,1.0,0.0,
-        0.0,0.0,1.0,
+    GLuint indices[] = {
+        0,1,2,3,2,1,0,2,4,1,3,5
     };
+
+
 
     const char* vertex_shader =
         "#version 460\n"
@@ -51,10 +57,13 @@ namespace msen {
 
 
     std::unique_ptr<ShaderProgram> p_shader_program;
-    std::unique_ptr<VertexBuffer> p_points_vbo;
-    std::unique_ptr<VertexBuffer> p_colors_vbo;
-    GLuint vao;
+    
+    std::unique_ptr<VertexBuffer> p_positions_colors_vbo;
+    std::unique_ptr<IndexBuffer> p_index_buffer;
 
+
+    std::unique_ptr<VertexArray> p_vao;
+    
 
 	Window::Window(std::string title, const unsigned int width, const unsigned int height)
         : m_data({std::move(title),width,height}){
@@ -150,24 +159,18 @@ namespace msen {
             return false;
         }
 
-        p_points_vbo = std::make_unique<VertexBuffer>(points, sizeof(points));
-        p_colors_vbo = std::make_unique<VertexBuffer>(colors, sizeof(colors));
 
-        GLuint colors_vbo = 0;
-        glGenBuffers(1, &colors_vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);        
-        glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
 
-        glGenVertexArrays(1,&vao);
-        glBindVertexArray(vao);
+        BufferLayout buffer_layout_2_vec3{
+            ShaderDataType::Float3 ,
+            ShaderDataType::Float3
+        };
 
-        glEnableVertexAttribArray(0);
-        p_points_vbo->bind();
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-        glEnableVertexAttribArray(1);
-        p_colors_vbo->bind();
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+        p_vao = std::make_unique<VertexArray>();
+        p_positions_colors_vbo = std::make_unique<VertexBuffer>(position_colors,sizeof(position_colors), buffer_layout_2_vec3);
+        p_index_buffer = std::make_unique<IndexBuffer>(indices,sizeof(indices)/sizeof(GLuint));
+        p_vao->add_vertex_buffer(*p_positions_colors_vbo);
+        p_vao->set_index_buffer(*p_index_buffer);
 
         return 0;
 	
@@ -179,13 +182,15 @@ namespace msen {
 
     void Window::on_update() {
         auto [r, g, b, a] = m_background_color;
-        glClearColor( r,g,b,a);
+
+
+        glClearColor(r, g, b, a);
         glClear(GL_COLOR_BUFFER_BIT);
 
         p_shader_program->bind();
-
-        glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES,0,3);
+        p_vao->bind();
+        
+        glDrawElements(GL_TRIANGLES,static_cast<GLsizei>(p_vao->get_indeces_count()), GL_UNSIGNED_INT,nullptr);
 
         
 
@@ -200,6 +205,8 @@ namespace msen {
 
         ImGui::Begin("background color");
         ImGui::ColorEdit4("background color",m_background_color);
+
+
         ImGui::End();
 
         ImGui::Render();
