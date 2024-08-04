@@ -1,4 +1,5 @@
 #pragma once
+#include <glm/mat4x4.hpp>
 
 namespace msen {
 	class ShaderProgram {
@@ -15,6 +16,8 @@ namespace msen {
 		void bind() const;
 		static void unbind();
 		bool isCompiled() const { return m_isCompiled; }
+
+		void setMatrix4(const char* name,const glm::mat4& matrix) const;
 	private:
 		bool m_isCompiled;
 		unsigned int m_id;

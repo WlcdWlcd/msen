@@ -15,6 +15,10 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 #include <imgui/backends/imgui_impl_glfw.h>
 
+#include <glm/mat3x3.hpp>
+#include <glm/trigonometric.hpp>
+
+
 namespace msen {
     
 
@@ -27,7 +31,7 @@ namespace msen {
         -0.5f,  0.5f, 0.0f,    1.0f ,0.0f, 1.0f,
         -0.5f, -0.5f, 0.0f,    1.0f, 0.0f, 0.0f,
          0.0f, 1.0f,0.0,       0.0f,0.0f,0.0f, 
-         0.0f, -1.0f,-5.0,       1.0f,1.0f,1.0f, 
+         0.0f, -1.0f,0.0,       1.0f,1.0f,1.0f, 
 
     };
 
@@ -35,27 +39,31 @@ namespace msen {
         0,1,2,3,2,1,0,2,4,1,3,5
     };
 
-
-
     const char* vertex_shader =
-        "#version 460\n"
-        "layout (location = 0) in vec3 vertex_position;"
-        "layout (location = 1) in vec3 vertex_color;"
-        "out vec3 color;"
-        "void main() {"
-        "   color = vertex_color;"
-        "   gl_Position = vec4(vertex_position,1.0);"
-        "}";
+        R"(#version 460
+        layout (location = 0) in vec3 vertex_position;
+        layout (location = 1) in vec3 vertex_color;
+        out vec3 color;
+        uniform mat4 scale_matrix;
+        uniform mat4 z_rotate_matrix;
+        uniform mat4 x_rotate_matrix;
+        uniform mat4 y_rotate_matrix;
+        void main() {
+           color = vertex_color;
+           gl_Position = y_rotate_matrix*x_rotate_matrix*z_rotate_matrix*scale_matrix*vec4(vertex_position,1.0);
+        }
+)";
 
     
 
     const char* fragment_shader = 
-        "#version 460\n"
-        "in vec3 color;"
-        "out vec4 frag_color;"
-        "void main() {"
-        "   frag_color = vec4(color,1.0);"
-        "}";
+        R"(#version 460
+        in vec3 color;
+        out vec4 frag_color;
+        void main() {
+           frag_color = vec4(color,1.0);
+        }
+)";
 
 
 
@@ -66,7 +74,10 @@ namespace msen {
 
 
     std::unique_ptr<VertexArray> p_vao;
-    
+    float scale[3] = { 1.f,1.f,1.f };
+    float rotate_z = 0.f;
+    float rotate_x = 0.f;
+    float rotate_y = 0.f;
 
 	Window::Window(std::string title, const unsigned int width, const unsigned int height)
         : m_data({std::move(title),width,height}){
@@ -128,8 +139,6 @@ namespace msen {
 
         glfwSetCursorPosCallback(m_pWindow, [](GLFWwindow* pWindow, double x, double y) {
             WindowData& data = *static_cast<WindowData*> (glfwGetWindowUserPointer(pWindow));
-
-
             EventMouseMoved event(x, y);
             data.eventCallbackFn(event);
             }
@@ -175,6 +184,7 @@ namespace msen {
         p_vao->add_vertex_buffer(*p_positions_colors_vbo);
         p_vao->set_index_buffer(*p_index_buffer);
 
+
         return 0;
 	
 	}
@@ -191,6 +201,46 @@ namespace msen {
         glClear(GL_COLOR_BUFFER_BIT);
 
         p_shader_program->bind();
+
+        glm::mat4 scale_matrix(scale[0], 0       , 0       , 0,
+                               0       , scale[1], 0       , 0,
+                               0       , 0       , scale[2], 0,
+                               0       , 0       , 0       , 1
+        );
+
+        float rotate_z_in_radians = glm::radians(rotate_z);
+        float rotate_x_in_radians = glm::radians(rotate_x);
+        float rotate_y_in_radians = glm::radians(rotate_y);
+
+        glm::mat4 z_rotate_matrix(
+            cos(rotate_z_in_radians), sin(rotate_z_in_radians), 0, 0,
+           -sin(rotate_z_in_radians), cos(rotate_z_in_radians), 0, 0,
+            0                       , 0                       , 1, 0,
+            0                       , 0                       , 0, 1
+        );
+
+        glm::mat4 x_rotate_matrix(
+            1                       , 0                       , 0                       , 0,
+            0                       , cos(rotate_x_in_radians), sin(rotate_x_in_radians), 0,
+            0                       ,-sin(rotate_x_in_radians), cos(rotate_x_in_radians), 0,
+            0                       , 0                       , 0                       , 1
+        );
+
+        glm::mat4 y_rotate_matrix(
+            cos(rotate_y_in_radians), 0                       ,-sin(rotate_y_in_radians), 0,
+            0                       , 1                       , 0                       , 0,
+            sin(rotate_y_in_radians), 0                       , cos(rotate_y_in_radians), 0,
+            0                       , 0                       , 0                       , 1
+        );
+
+
+
+        p_shader_program->bind();
+        p_shader_program->setMatrix4("scale_matrix", scale_matrix);
+        p_shader_program->setMatrix4("z_rotate_matrix", z_rotate_matrix);
+        p_shader_program->setMatrix4("x_rotate_matrix", x_rotate_matrix);
+        p_shader_program->setMatrix4("y_rotate_matrix", y_rotate_matrix);
+
         p_vao->bind();
         
         glDrawElements(GL_TRIANGLES,static_cast<GLsizei>(p_vao->get_indeces_count()), GL_UNSIGNED_INT,nullptr);
@@ -208,6 +258,12 @@ namespace msen {
 
         ImGui::Begin("background color");
         ImGui::ColorEdit4("background color",m_background_color);
+
+        ImGui::SliderFloat3("scale", scale, 0.0, 2.0);
+        ImGui::SliderFloat("rotate_z", &rotate_z, 0.0, 180.0);
+        ImGui::SliderFloat("rotate_x", &rotate_x, 0.0, 180.0);
+        ImGui::SliderFloat("rotate_y", &rotate_y, 0.0, 180.0);
+
 
 
         ImGui::End();

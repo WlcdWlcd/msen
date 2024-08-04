@@ -5,7 +5,7 @@
 #include <glad/glad.h>
 
 namespace msen {
-
+	//to do: move that from here
 	constexpr unsigned int ShaderDataType::shader_data_type_to_components_count(const DataTypes type) {
 		switch (type) {
 		case DataTypes::Float:
